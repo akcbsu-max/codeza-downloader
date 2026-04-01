@@ -59,9 +59,7 @@ export default function Footer() {
             <p className="text-gray-700 text-sm">
               © {currentYear} Codeza. جميع الحقوق محفوظة.
             </p>
-            <p className="text-gray-700 text-sm">
-              Made with Manus
-            </p>
+
           </div>
         </div>
       </div>

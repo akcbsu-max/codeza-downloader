@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Copy, X } from 'lucide-react';
+import { Download, Copy, X, FileVideo, ImageIcon, Music } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ResultSectionProps {
@@ -30,6 +30,12 @@ export default function ResultSection({ data, onClose, url }: ResultSectionProps
     }
   };
 
+  // Helper to check if we have any media to show
+  const hasVideo = !!data.video;
+  const hasDownloads = data.downloads && Array.isArray(data.downloads) && data.downloads.length > 0;
+  const hasAudio = !!data.audio;
+  const hasMedia = hasVideo || hasDownloads || hasAudio;
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded border-2 border-black max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative">
@@ -42,156 +48,123 @@ export default function ResultSection({ data, onClose, url }: ResultSectionProps
         </button>
 
         {/* Content */}
-        <div className="space-y-6 pr-8">
+        <div className="space-y-6 pr-4">
+          {!hasMedia && (
+            <div className="text-center py-12">
+              <p className="text-xl font-bold text-black">عذراً، لم يتم العثور على وسائط قابلة للتحميل</p>
+              <p className="text-gray-600 mt-2">يرجى التأكد من الرابط والمحاولة مرة أخرى</p>
+            </div>
+          )}
+
           {/* Video Player */}
-          {data.video && (
-            <div className="rounded border-2 border-black overflow-hidden bg-black">
-              <video
-                src={data.video}
-                controls
-                className="w-full h-auto max-h-96"
-              />
-            </div>
-          )}
-
-          {/* Audio Player */}
-          {data.audio && (
-            <div className="rounded border-2 border-black p-4 bg-gray-50">
-              <p className="text-sm text-gray-600 mb-3">🎵 مشغل الصوت</p>
-              <audio
-                src={data.audio}
-                controls
-                className="w-full"
-              />
-            </div>
-          )}
-
-          {/* Thumbnail */}
-          {data.thumbnail && !data.video && (
-            <div className="rounded border-2 border-black overflow-hidden">
-              <img
-                src={data.thumbnail}
-                alt="Preview"
-                className="w-full h-auto max-h-96 object-cover"
-              />
+          {hasVideo && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-black font-bold">
+                <FileVideo className="w-5 h-5" />
+                <span>معاينة الفيديو</span>
+              </div>
+              <div className="rounded border-2 border-black overflow-hidden bg-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <video
+                  src={data.video}
+                  controls
+                  className="w-full h-auto max-h-96"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => downloadFile(data.video, 'video')}
+                  className="flex-1 py-3 px-4 bg-red-600 text-white font-bold rounded border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all flex items-center justify-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  تحميل الفيديو
+                </button>
+                <button
+                  onClick={() => copyToClipboard(data.video)}
+                  className="px-4 py-3 border-2 border-black text-black font-bold rounded shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+                >
+                  <Copy className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           )}
 
           {/* Images Gallery */}
-          {data.downloads && Array.isArray(data.downloads) && (
+          {hasDownloads && (
             <div className="space-y-4">
-              {data.downloads.some((d: any) => d.format?.match(/JPG|PNG|GIF|WEBP/i)) && (
-                <div>
-                  <p className="text-sm text-gray-600 mb-3">📸 معرض الصور</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {data.downloads
-                      .filter((d: any) => d.format?.match(/JPG|PNG|GIF|WEBP/i))
-                      .map((img: any, idx: number) => (
-                        <div key={idx} className="rounded border-2 border-black overflow-hidden">
-                          <img
-                            src={img.url}
-                            alt={`Image ${idx + 1}`}
-                            className="w-full h-auto max-h-64 object-cover"
-                          />
-                        </div>
-                      ))}
+              <div className="flex items-center gap-2 text-black font-bold">
+                <ImageIcon className="w-5 h-5" />
+                <span>الصور المتاحة</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {data.downloads.map((item: any, idx: number) => (
+                  <div key={idx} className="space-y-2">
+                    <div className="rounded border-2 border-black overflow-hidden bg-gray-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                      <img
+                        src={item.url}
+                        alt={`Media ${idx + 1}`}
+                        className="w-full h-auto max-h-64 object-contain bg-white"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => downloadFile(item.url, `image-${idx + 1}`)}
+                        className="flex-1 py-2 px-4 bg-black text-white font-bold rounded border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 text-sm"
+                      >
+                        <Download className="w-4 h-4" />
+                        تحميل {item.format || 'صورة'}
+                      </button>
+                      <button
+                        onClick={() => copyToClipboard(item.url)}
+                        className="px-3 py-2 border-2 border-black text-black font-bold rounded hover:bg-gray-100 transition-colors"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Audio Player */}
+          {hasAudio && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-black font-bold">
+                <Music className="w-5 h-5" />
+                <span>ملف صوتي</span>
+              </div>
+              <div className="rounded border-2 border-black p-4 bg-gray-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <audio
+                  src={data.audio}
+                  controls
+                  className="w-full"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => downloadFile(data.audio, 'audio')}
+                  className="flex-1 py-3 px-4 bg-black text-white font-bold rounded border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all flex items-center justify-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  تحميل الصوت
+                </button>
+                <button
+                  onClick={() => copyToClipboard(data.audio)}
+                  className="px-4 py-3 border-2 border-black text-black font-bold rounded shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+                >
+                  <Copy className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           )}
 
           {/* Title */}
           {data.title && (
-            <div>
+            <div className="border-t-2 border-black pt-4">
               <h3 className="text-lg font-bold text-black mb-2">العنوان</h3>
               <p className="text-gray-700 break-words">{data.title}</p>
             </div>
           )}
-
-          {/* Download Links */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-bold text-black">خيارات التحميل</h3>
-
-            {data.download_links && Array.isArray(data.download_links) && (
-              <div className="space-y-2">
-                {data.download_links.map((link: any, idx: number) => (
-                  <div key={idx} className="flex gap-2 items-center">
-                    <button
-                      onClick={() => downloadFile(link.url, link.quality || `download-${idx}`)}
-                      className="flex-1 py-2 px-4 bg-red-600 text-white font-bold rounded hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      {link.quality || `جودة ${idx + 1}`}
-                    </button>
-                    <button
-                      onClick={() => copyToClipboard(link.url)}
-                      className="px-4 py-2 border-2 border-black text-black font-bold rounded hover:bg-gray-100 transition-colors"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Direct Download Link */}
-            {data.url && !data.download_links && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => downloadFile(data.url, data.title || 'download')}
-                  className="flex-1 py-2 px-4 bg-red-600 text-white font-bold rounded hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  تحميل
-                </button>
-                <button
-                  onClick={() => copyToClipboard(data.url)}
-                  className="px-4 py-2 border-2 border-black text-black font-bold rounded hover:bg-gray-100 transition-colors"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            {/* Video Direct Link */}
-            {data.video && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => downloadFile(data.video, data.title || 'video')}
-                  className="flex-1 py-2 px-4 bg-red-600 text-white font-bold rounded hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  تحميل الفيديو
-                </button>
-                <button
-                  onClick={() => copyToClipboard(data.video)}
-                  className="px-4 py-2 border-2 border-black text-black font-bold rounded hover:bg-gray-100 transition-colors"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            {/* Audio Direct Link */}
-            {data.audio && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => downloadFile(data.audio, data.title || 'audio')}
-                  className="flex-1 py-2 px-4 bg-red-600 text-white font-bold rounded hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  تحميل الصوت
-                </button>
-                <button
-                  onClick={() => copyToClipboard(data.audio)}
-                  className="px-4 py-2 border-2 border-black text-black font-bold rounded hover:bg-gray-100 transition-colors"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </div>
 
           {/* Original URL */}
           <div className="bg-gray-50 p-4 rounded border-2 border-black">

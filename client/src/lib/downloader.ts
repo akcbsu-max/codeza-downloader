@@ -82,8 +82,7 @@ export async function downloadMedia(url: string): Promise<any> {
     const apiUrl = `${API_BASE}/api/${detection.endpoint}?url=${encodeURIComponent(url)}`;
     
     console.log(`Downloading from ${detection.platform}...`);
-    console.log(`API URL: ${apiUrl}`);
-
+    
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
@@ -91,21 +90,26 @@ export async function downloadMedia(url: string): Promise<any> {
       },
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+    const data = await response.json();
+
+    if (!response.ok || data.success === false) {
       throw new Error(
-        errorData.message || 
-        `فشل التحميل من ${detection.platform}. الحالة: ${response.status}`
+        data.message || 
+        `فشل التحميل من ${detection.platform}.`
       );
     }
 
-    const data = await response.json();
-
-    // Validate response
-    if (!data) {
-      throw new Error('لم يتم استقبال بيانات من الخادم');
+    // Return ONLY the data object as requested
+    // This handles cases where API returns { success: true, data: { ... } }
+    if (data.success && data.data) {
+      return {
+        ...data.data,
+        platform: detection.platform,
+        originalUrl: url,
+      };
     }
 
+    // Fallback if data structure is different but success is true
     return {
       ...data,
       platform: detection.platform,
